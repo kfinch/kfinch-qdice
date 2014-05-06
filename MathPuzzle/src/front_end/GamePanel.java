@@ -18,6 +18,7 @@ import java.util.Stack;
 import javax.swing.JPanel;
 
 import back_end.GameState;
+import back_end.CombineException;
 import back_end.Operation;
 
 public class GamePanel extends JPanel implements ActionListener {
@@ -56,8 +57,8 @@ public class GamePanel extends JPanel implements ActionListener {
 	private boolean mouseDragging; //tracks if the mouse is being dragged
 	private List<Dimension> dragLine; //where the drag line should be drawn if the mouse is being dragged
 	
-	private boolean isVictory; //tracks if the current game has been won
-	private boolean isWrongFinal; //tracks if you finish with the wrong number
+	private String centerMessage; //Message to be displayed in center of game board.
+	
 	private MouseInput input; //adapter for mouse input
 	private MouseMotionInput motionInput; //adapter for mouse motion input
 	private ChoiceProgress progress; //tracks player progress in specifying a move.
@@ -74,13 +75,13 @@ public class GamePanel extends JPanel implements ActionListener {
 		mouseDragging = false;
 		dragLine = new ArrayList<Dimension>(200); //TODO: reasonable starting size?
 		
+		centerMessage = "";
+		
 		input = new MouseInput();
 		motionInput = new MouseMotionInput();
 		addMouseListener(input);
 		addMouseMotionListener(motionInput);
 		
-		isVictory = false;
-		isWrongFinal = false;
 		progress = ChoiceProgress.FIRST;
 		firstIndex = -1;
 		secondIndex = -1;
@@ -91,6 +92,7 @@ public class GamePanel extends JPanel implements ActionListener {
 	
 	public void newGame(){
 		System.out.println("Starting new game!"); //TODO: Remove debugging
+		clearMessage();
 		gameHistory.clear();
 		gameHistory.push(new GameState());
 		checkVictory();
@@ -99,7 +101,12 @@ public class GamePanel extends JPanel implements ActionListener {
 	
 	private void doMove(){
 		System.out.println("Doing a move!"); //TODO: Remove debugging
-		gameHistory.push(gameHistory.peek().afterCombine(firstIndex, secondIndex, opIndex));
+		clearMessage();
+		try {
+			gameHistory.push(gameHistory.peek().afterCombine(firstIndex, secondIndex, opIndex));
+		} catch (CombineException e) {
+			setMessage(e.getMessage());
+		}
 		progress = ChoiceProgress.FIRST;
 		firstIndex = -1;
 		secondIndex = -1;
@@ -110,6 +117,7 @@ public class GamePanel extends JPanel implements ActionListener {
 	
 	private void doUndo(){
 		System.out.println("Doing an undo!"); //TODO: Remove debugging
+		clearMessage();
 		if(progress != ChoiceProgress.FIRST){
 			progress = ChoiceProgress.FIRST;
 			firstIndex = -1;
@@ -131,6 +139,7 @@ public class GamePanel extends JPanel implements ActionListener {
 	
 	private void doReset(){
 		System.out.println("Doing a reset!"); //TODO: Remove debugging
+		clearMessage();
 		while(gameHistory.size() != 1)
 			gameHistory.pop();
 		progress = ChoiceProgress.FIRST;
@@ -145,18 +154,22 @@ public class GamePanel extends JPanel implements ActionListener {
 		GameState gameState = gameHistory.peek();
 		if(gameState.getNumPieces() == 1){
 			if(gameState.pieceAt(0) == gameState.getGoal()){
-				isVictory = true;
-				isWrongFinal = false;
+				setMessage("You win!");
 			}
 			else{
-				isVictory = false;
-				isWrongFinal = true;
+				setMessage("WRONG");
 			}
 		}
-		else{
-			isVictory = false;
-			isWrongFinal = false;
-		}
+	}
+	
+	private void setMessage(String message){
+		centerMessage = message;
+		repaint();
+	}
+	
+	private void clearMessage(){
+		centerMessage = "";
+		repaint();
 	}
 	
 	/*
@@ -241,16 +254,9 @@ public class GamePanel extends JPanel implements ActionListener {
 		}
 		
 		//Draw message (if needed)
-		if(isVictory){
-			g2d.setColor(Color.black);
-			g2d.setFont(new Font("Sans_Serif", Font.BOLD, boxDim));
-			g2d.drawString("YOU WIN!",width/3,messageHorizontal);
-		}
-		if(isWrongFinal){
-			g2d.setColor(Color.black);
-			g2d.setFont(new Font("Sans_Serif", Font.BOLD, boxDim));
-			g2d.drawString("WRONG",width/3,messageHorizontal);
-		}
+		g2d.setColor(Color.black);
+		g2d.setFont(new Font("Sans_Serif", Font.BOLD, boxDim));
+		g2d.drawString(centerMessage,width/3,messageHorizontal);
 		
         g2d.setStroke(new BasicStroke(2));
         g2d.setFont(new Font("Sans_Serif", Font.BOLD, boxDim/2));

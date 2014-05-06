@@ -1,7 +1,7 @@
 package back_end;
 
+import java.rmi.server.Operation;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -11,12 +11,6 @@ public class GameState {
 	private static final int DEFAULT_MAX_GOAL = 70;
 	private static final int DEFAULT_NUM_PIECES = 5;
 	private static final int DEFAULT_MAX_PIECE = 6;
-	
-	public static final int MAX_PIECES = 10;
-	public static final int MAX_OPS = 10;
-	
-	public static final int MAX_PIECE_SIZE = 999;
-	public static final int MIN_PIECE_SIZE = -999;
 	
 	private int pieces[];
 	private Operation ops[];
@@ -31,12 +25,12 @@ public class GameState {
 	 * @param ops A list of operations which represent the usable operations
 	 * @param goal The goal integer
 	 */
-	public GameState(int pieces[], Operation ops[], int numPieces, int numOps, int goal, boolean opsReusable){
+	public GameState(List<Integer> pieces, List<Operation> ops, int goal, boolean opsReusable){
 		this.pieces = pieces;
 		this.ops = ops;
 		this.goal = goal;
-		this.numPieces = numPieces;
-		this.numOps = numOps;
+		this.numPieces = pieces.size();
+		this.numOps = ops.size();
 		this.opsReusable = opsReusable;
 	}
 	
@@ -45,8 +39,8 @@ public class GameState {
 	 * @param toCopy the game state to be copied
 	 */
 	public GameState(GameState toCopy){
-		this.pieces = Arrays.copyOf(toCopy.pieces, toCopy.numPieces);
-		this.ops = Arrays.copyOf(toCopy.ops, toCopy.numOps);
+		this.pieces = new ArrayList<Integer>(toCopy.pieces);
+		this.ops = new ArrayList<Operation>(toCopy.ops);
 		this.goal = toCopy.goal;
 		this.numPieces = toCopy.numPieces;
 		this.numOps = toCopy.numOps;
@@ -63,11 +57,11 @@ public class GameState {
 	public GameState(int minGoal, int maxGoal, int numPieces, int maxPiece){
 		goal = (int) ((maxGoal-minGoal)*(Math.random()) + minGoal);
 		this.numPieces = numPieces;
-		pieces = new int[numPieces];
+		pieces = new ArrayList<Integer>();
 		for(int i=0; i<numPieces; i++)
-			pieces[i] = ((int)(Math.random()*maxPiece + 1));
+			pieces.add((int)(Math.random()*maxPiece + 1));
 		ops = defaultOps();
-		numOps = ops.length;
+		numOps = ops.size();
 		opsReusable = true;
 	}
 	
@@ -78,13 +72,13 @@ public class GameState {
 		this(DEFAULT_MIN_GOAL, DEFAULT_MAX_GOAL, DEFAULT_NUM_PIECES, DEFAULT_MAX_PIECE);
 	}
 	
-	private Operation[] defaultOps(){
-		Operation defaultOps[] = new Operation[5];
-		defaultOps[0] = Operation.PLUS;
-		defaultOps[1] = Operation.MINUS;
-		defaultOps[2] = Operation.TIMES;
-		defaultOps[3] = Operation.DIVIDE;
-		defaultOps[4] = Operation.EXPONENT;
+	private List<Operation> defaultOps(){
+		ArrayList<Operation> defaultOps = new ArrayList<Operation>(5);
+		defaultOps.add(Operation.PLUS);
+		defaultOps.add(Operation.MINUS);
+		defaultOps.add(Operation.TIMES);
+		defaultOps.add(Operation.DIVIDE);
+		defaultOps.add(Operation.EXPONENT);
 		return defaultOps;
 	}
 	
@@ -100,87 +94,68 @@ public class GameState {
 		return goal;
 	}
 	
-	public int[] getPieces(){
+	public List<Integer> getPieces(){
 		return pieces;
 	}
 	
-	public Operation[] getOps(){
+	public List<Operation> getOps(){
 		return ops;
 	}
 	
 	public int pieceAt(int index){
-		return pieces[index];
+		return pieces.get(index);
 	}
 	
 	public Operation opAt(int index){
-		return ops[index];
+		return ops.get(index);
 	}
 	
 	/**
-	 * Combines two pieces using the specified operation. New piece will always take the place of the second operand.
+	 * Combines two pieces using the specified operation. New piece will always be added at the end.
 	 * @param firstIndex The index of the first piece to be combined
 	 * @param secondIndex The index of the second piece to be combined
 	 * @param op The operation to combine with
 	 * @return The value of the combined piece
-	 * @throws CombineException 
 	 */
-	public int combine(int firstIndex, int secondIndex, int opIndex) throws CombineException{
-		int first = pieces[firstIndex];
-		int second = pieces[secondIndex];
-		Operation op = ops[opIndex];
+	public int combine(int firstIndex, int secondIndex, int opIndex) throws Exception{
+		int first = pieces.remove(firstIndex);
+		if(secondIndex > firstIndex)
+			secondIndex--;
+		int second = pieces.remove(secondIndex);
+		Operation op;
+		if(opsReusable){
+			op = ops.get(opIndex);
+		}
+		else{
+			op = ops.remove(opIndex);
+			numOps--;
+		}
 		
 		int result = 0;
 		switch(op){
-		case PLUS:
-			result = first + second;
-			break;
-		case MINUS:
-			result = first - second;
-			break;
-		case TIMES:
-			result = first * second;
-			break;
-		case DIVIDE:
-			if(second == 0)
-				throw new CombineException("DIV BY ZERO");
-			if(first % second != 0)
-				throw new CombineException("FRACTION");
-			result = first / second;
-			break;
-		case EXPONENT:
-			//TODO: this has a chance to overflow in an epic manner before hitting the bounds check. Add handling.
-			result = (int) Math.pow(first, second);
-			break;
-		case ROOT:
-			//TODO: add fraction detection
-			result = (int) Math.pow(first, 1/(double)(second));
-			break;
+		case PLUS : result = first + second; break;
+		case MINUS : result = first - second; break;
+		case TIMES : result = first * second; break;
+		case DIVIDE : result = first / second; break;
+		case EXPONENT : result = (int) Math.pow(first, second); break;
+		case ROOT : result = (int) Math.pow(first, 1/(double)(second)); break; //TODO: Is that cast needed?
 		}
-		
-		if(result > MAX_PIECE_SIZE)
-			throw new CombineException("TOO LARGE");
-		if(result < MIN_PIECE_SIZE)
-			throw new CombineException("TOO SMALL");
-
-		pieces[secondIndex] = result;
-		for(int i=firstIndex+1; i<numPieces; i++)
-			pieces[i-1] = pieces[i];
-		
+		pieces.add(result);
 		numPieces--;
 		return result;
 	}
 	
 	/**
-	 * Combines two pieces using the specified operation. New piece will always take the place of the second operand.
+	 * Combines two pieces using the specified operation. New piece will always be at end of list.
 	 * @param firstIndex The index of the first piece to be combined
 	 * @param secondIndex The index of the second piece to be combined
 	 * @param op The operation to combine with
 	 * @return A game state representing this game state after the specified combine operation.
-	 * @throws CombineException 
 	 */
-	public GameState afterCombine(int firstIndex, int secondIndex, int opIndex) throws CombineException{
+	public GameState afterCombine(int firstIndex, int secondIndex, int opIndex){
 		GameState result = new GameState(this);
 		result.combine(firstIndex, secondIndex, opIndex);
 		return result;
 	}
+
 }
