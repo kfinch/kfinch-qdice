@@ -1,9 +1,6 @@
 package back_end;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
 public class GameState {
 
@@ -80,11 +77,11 @@ public class GameState {
 	
 	private Operation[] defaultOps(){
 		Operation defaultOps[] = new Operation[5];
-		defaultOps[0] = Operation.PLUS;
-		defaultOps[1] = Operation.MINUS;
-		defaultOps[2] = Operation.TIMES;
-		defaultOps[3] = Operation.DIVIDE;
-		defaultOps[4] = Operation.EXPONENT;
+		defaultOps[0] = new Operation(Operation.PLUS);
+		defaultOps[1] = new Operation(Operation.MINUS);
+		defaultOps[2] = new Operation(Operation.TIMES);
+		defaultOps[3] = new Operation(Operation.DIVIDE);
+		defaultOps[4] = new Operation(Operation.EXPONENT);
 		return defaultOps;
 	}
 	
@@ -129,45 +126,30 @@ public class GameState {
 		int second = pieces[secondIndex];
 		Operation op = ops[opIndex];
 		
-		int result = 0;
-		switch(op){
-		case PLUS:
-			result = first + second;
-			break;
-		case MINUS:
-			result = first - second;
-			break;
-		case TIMES:
-			result = first * second;
-			break;
-		case DIVIDE:
-			if(second == 0)
-				throw new CombineException("DIV BY ZERO");
-			if(first % second != 0)
-				throw new CombineException("FRACTION");
-			result = first / second;
-			break;
-		case EXPONENT:
-			//TODO: this has a chance to overflow in an epic manner before hitting the bounds check. Add handling.
-			result = (int) Math.pow(first, second);
-			break;
-		case ROOT:
-			//TODO: add fraction detection
-			result = (int) Math.pow(first, 1/(double)(second));
-			break;
-		}
-		
-		if(result > MAX_PIECE_SIZE)
-			throw new CombineException("TOO LARGE");
-		if(result < MIN_PIECE_SIZE)
-			throw new CombineException("TOO SMALL");
+		int result = op.operate(first, second);
 
 		pieces[secondIndex] = result;
 		for(int i=firstIndex+1; i<numPieces; i++)
 			pieces[i-1] = pieces[i];
-		
 		numPieces--;
+		
+		if(!opsReusable){
+			for(int i=opIndex+1; i<numOps; i++)
+				ops[i-1] = ops[i];
+			numOps--;
+		}
+		
 		return result;
+	}
+	
+	/**
+	 * Combines two pieces using the specified move. New piece will always take the place of the second operand.
+	 * @param m Move to be applied.
+	 * @return The value of the combined piece
+	 * @throws CombineException
+	 */
+	public int combine(Move m) throws CombineException{
+		return combine(m.firstIndex,m.secondIndex,m.opIndex);
 	}
 	
 	/**
@@ -181,6 +163,45 @@ public class GameState {
 	public GameState afterCombine(int firstIndex, int secondIndex, int opIndex) throws CombineException{
 		GameState result = new GameState(this);
 		result.combine(firstIndex, secondIndex, opIndex);
+		return result;
+	}
+	
+	/**
+	 * Combines two pieces using the specified move. New piece will always take the place of the second operand.
+	 * @param m Move to be applied.
+	 * @return A game state representing this game state after the specified move.
+	 * @throws CombineException
+	 */
+	public GameState afterCombine(Move m) throws CombineException{
+		return afterCombine(m.firstIndex,m.secondIndex,m.opIndex);
+	}
+	
+	public String moveString(Move m){
+		int first = pieces[m.firstIndex];
+		int second = pieces[m.secondIndex];
+		Operation op = ops[m.opIndex];
+		String result = first + " " + op + " " + second;
+		try {
+			result += " = " + ops[m.opIndex].operate(first, second);
+		} catch (CombineException e) {
+			result += " = INVALID MOVE: " + e.getMessage();
+		}
+		return result;
+	}
+	
+	public String toString(){
+		String result = "Goal: " + goal;
+		result += "\nOperands: ";
+		for(int i=0; i<numPieces; i++){
+			result += pieces[i] + " ";
+		}
+		result += "\nOperators: ";
+		for(int i=0; i<numOps; i++){
+			result += ops[i] + " ";
+		}
+		if(opsReusable)
+			result += "(reusable)";
+		
 		return result;
 	}
 }

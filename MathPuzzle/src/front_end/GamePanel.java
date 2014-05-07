@@ -291,15 +291,7 @@ public class GamePanel extends JPanel implements ActionListener {
 		Operation op;
 		for(int i=0; i<numOps; i++){
 			op = gameState.opAt(i);
-			switch(op){
-			case PLUS : label = "+"; break;
-			case MINUS : label = "-"; break;
-			case TIMES : label = "x"; break;
-			case DIVIDE : label = "/"; break; //TODO: get the actual "divided by" character for this
-			case EXPONENT : label = "^"; break;
-			case ROOT : label = "^?"; break; //TODO: get a better character for this
-			default : label = "ERROR";
-			}
+			label = op.symbol;
 			loc = opsLocs.get(i);
 			g2d.setColor(BUTTON_EDGE_COLOR);
 			g2d.drawRoundRect(loc.width, loc.height, boxDim, boxDim, arcDim, arcDim);
