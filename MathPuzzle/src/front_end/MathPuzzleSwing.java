@@ -4,39 +4,36 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
-import java.util.Stack;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-import back_end.GameState;
-
 public class MathPuzzleSwing extends JFrame implements ActionListener {
 
 	private GamePanel gamePanel;
-	private Stack<GameState> gameHistory;
+	private JComponent preferencesPanel;
+	private JComponent splashScreen;
+	private MainPanelMode mode;
 	
 	public MathPuzzleSwing(){
-		gameHistory = new Stack<GameState>();
 		initUI();
-		
-		gameHistory.add(new GameState()); //TODO: REMOVE
 	}
 	
 	public void initUI(){
 		//initialize main window
 		setTitle("Q-Dice");
-		setSize(700,500); //TODO: see if this is reasonable
+		setSize(700,550); //TODO: see if this is reasonable
+		setResizable(true);
 		setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         
         //add button panel
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setBorder(BorderFactory.createEtchedBorder(Color.black, Color.black));
+        buttonPanel.setBorder(BorderFactory.createEtchedBorder(Color.gray, Color.gray));
         add(buttonPanel, BorderLayout.SOUTH);
         
         //add buttons
@@ -46,27 +43,72 @@ public class MathPuzzleSwing extends JFrame implements ActionListener {
         rollAgainButton.addActionListener(this);
         preferencesButton.addActionListener(this);
         quitButton.addActionListener(this);
+        
         buttonPanel.add(rollAgainButton);
         buttonPanel.add(preferencesButton);
         buttonPanel.add(quitButton);
         
-        //add game panel
-        gamePanel = new GamePanel(gameHistory);
-        gamePanel.setBorder(BorderFactory.createEtchedBorder(Color.black, Color.black));
-        add(gamePanel, BorderLayout.CENTER);
+        //TODO: TEST BUTTON PLEASE IGNORE
+        //JButton testButton = new JButton("TEST BUTTON");
+        //testButton.addActionListener(this);
+        //buttonPanel.add(testButton);
+        
+        //create game panel
+        gamePanel = new GamePanel();
+        gamePanel.newGame();
+        
+        //create preferences panel
+        preferencesPanel = new PreferencesPanel();
+        
+        //create (and show) splash screen
+        splashScreen = new SplashPanel();
+        add(splashScreen, BorderLayout.CENTER);
+        
+        mode = MainPanelMode.SPLASH;
 	}
+	
+	
+	public void switchMainPanel(MainPanelMode newMode){
+		if(mode == newMode){ //do nothing if switching to mode we're already in
+			System.out.println("No panel swap needed!");
+			return;
+		}
+		
+		switch(mode){ //remove old panel
+		case SPLASH: remove(splashScreen); break;
+		case PREFERENCES: remove(preferencesPanel); break;
+		case GAME: remove(gamePanel); break;
+		}
+		
+		switch(newMode){ //add new panel
+		case SPLASH: add(splashScreen, BorderLayout.CENTER); break;
+		case PREFERENCES: add(preferencesPanel, BorderLayout.CENTER); break;
+		case GAME: add(gamePanel, BorderLayout.CENTER); break;
+		}
+		
+		mode = newMode;
+		validate();
+	}
+	
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
 		if(command.equals("Roll Again")){
+			switchMainPanel(MainPanelMode.GAME);
 			gamePanel.newGame();
+			repaint();
 		}
-		if(command.equals("Preferences")){
-			//TODO: Implement
+		else if(command.equals("Preferences")){
+			switchMainPanel(MainPanelMode.PREFERENCES);
+			repaint();
 		}
-		if(command.equals("Quit")){
+		else if(command.equals("Quit")){
 			System.exit(0);
+		}
+		else if(command.equals("TEST BUTTON")){ //TODO: TEST BUTTON PLEASE IGNORE
+			System.out.println("beep boop");
+			gamePanel.testMethod();
 		}
 	}
 
@@ -80,4 +122,8 @@ public class MathPuzzleSwing extends JFrame implements ActionListener {
             }
         });
     }
+	
+	private enum MainPanelMode{
+		SPLASH, GAME, PREFERENCES
+	}
 }

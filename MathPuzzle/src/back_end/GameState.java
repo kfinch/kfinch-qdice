@@ -75,7 +75,7 @@ public class GameState {
 		this(DEFAULT_MIN_GOAL, DEFAULT_MAX_GOAL, DEFAULT_NUM_PIECES, DEFAULT_MAX_PIECE);
 	}
 	
-	private Operation[] defaultOps(){
+	public static Operation[] defaultOps(){
 		Operation defaultOps[] = new Operation[5];
 		defaultOps[0] = new Operation(Operation.PLUS);
 		defaultOps[1] = new Operation(Operation.MINUS);
@@ -122,6 +122,9 @@ public class GameState {
 	 * @throws CombineException 
 	 */
 	public int combine(int firstIndex, int secondIndex, int opIndex) throws CombineException{
+		if(firstIndex == secondIndex)
+			throw new CombineException("Can't use same operand twice!");
+		
 		int first = pieces[firstIndex];
 		int second = pieces[secondIndex];
 		Operation op = ops[opIndex];
