@@ -1,5 +1,6 @@
 package front_end;
 
+import java.awt.Font;
 import java.awt.Graphics;
 
 import javax.swing.JPanel;
@@ -8,7 +9,8 @@ public class PreferencesPanel extends JPanel{
 
 	
 	private void doDrawing(Graphics g){
-		g.drawString("THIS IS PREFS LOL", 10, 50);
+		g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+		g.drawString("PREFERENCES NOT YET IMPLEMENTED, SORRY )=", 10, 30);
 	}
 	
 	@Override

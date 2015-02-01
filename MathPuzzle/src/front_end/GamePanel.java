@@ -50,7 +50,7 @@ public class GamePanel extends JPanel implements ActionListener, ComponentListen
 	
 	private Stack<GameState> gameHistory; //the progression of game states. Bottom is initial state, top is current state.
 	
-	Dimension size; //The dimensions of the game panel, in pixels
+	private Dimension size; //The dimensions of the game panel, in pixels
 	private int width, height; //the width and height of the game panel, in pixels
 	
 	private int boxDim; //pixels to a side the pieces and ops boxs will be

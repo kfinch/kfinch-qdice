@@ -1,6 +1,7 @@
 package front_end;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,10 +15,15 @@ import javax.swing.SwingUtilities;
 
 public class MathPuzzleSwing extends JFrame implements ActionListener {
 
+	private static final String GAME_CARDNAME = "game";
+	private static final String SPLASH_CARDNAME = "splash";
+	private static final String PREFERENCES_CARDNAME = "prefs";
+	
+	private JPanel containerPanel;
+	
 	private GamePanel gamePanel;
-	private JComponent preferencesPanel;
-	private JComponent splashScreen;
-	private MainPanelMode mode;
+	private PreferencesPanel preferencesPanel;
+	private SplashPanel splashPanel;
 	
 	public MathPuzzleSwing(){
 		initUI();
@@ -29,7 +35,7 @@ public class MathPuzzleSwing extends JFrame implements ActionListener {
 		setSize(700,550); //TODO: see if this is reasonable
 		setResizable(true);
 		setLocationRelativeTo(null);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
         //add button panel
         JPanel buttonPanel = new JPanel();
@@ -40,6 +46,7 @@ public class MathPuzzleSwing extends JFrame implements ActionListener {
         JButton rollAgainButton = new JButton("Roll Again");
         JButton preferencesButton = new JButton("Preferences");
         JButton quitButton = new JButton("Quit");
+        
         rollAgainButton.addActionListener(this);
         preferencesButton.addActionListener(this);
         quitButton.addActionListener(this);
@@ -48,67 +55,55 @@ public class MathPuzzleSwing extends JFrame implements ActionListener {
         buttonPanel.add(preferencesButton);
         buttonPanel.add(quitButton);
         
-        //TODO: TEST BUTTON PLEASE IGNORE
-        //JButton testButton = new JButton("TEST BUTTON");
-        //testButton.addActionListener(this);
-        //buttonPanel.add(testButton);
-        
-        //create game panel
+        //initialize various panels
         gamePanel = new GamePanel();
-        gamePanel.newGame();
-        
-        //create preferences panel
+        //gamePanel.newGame();
         preferencesPanel = new PreferencesPanel();
+        splashPanel = new SplashPanel();
         
-        //create (and show) splash screen
-        splashScreen = new SplashPanel();
-        add(splashScreen, BorderLayout.CENTER);
-        
-        mode = MainPanelMode.SPLASH;
+        //initialize and add the container panel and its cards
+    	containerPanel = new JPanel(new CardLayout());
+    	containerPanel.add(gamePanel, GAME_CARDNAME);
+    	containerPanel.add(splashPanel, SPLASH_CARDNAME);
+    	containerPanel.add(preferencesPanel, PREFERENCES_CARDNAME);
+    	add(containerPanel, BorderLayout.CENTER);
+    	
+    	swapToSplashPanel();
 	}
 	
-	
-	public void switchMainPanel(MainPanelMode newMode){
-		if(mode == newMode){ //do nothing if switching to mode we're already in
-			System.out.println("No panel swap needed!");
-			return;
-		}
-		
-		switch(mode){ //remove old panel
-		case SPLASH: remove(splashScreen); break;
-		case PREFERENCES: remove(preferencesPanel); break;
-		case GAME: remove(gamePanel); break;
-		}
-		
-		switch(newMode){ //add new panel
-		case SPLASH: add(splashScreen, BorderLayout.CENTER); break;
-		case PREFERENCES: add(preferencesPanel, BorderLayout.CENTER); break;
-		case GAME: add(gamePanel, BorderLayout.CENTER); break;
-		}
-		
-		mode = newMode;
-		validate();
+	public void swapToGamePanel(){
+		((CardLayout)containerPanel.getLayout()).show(containerPanel, GAME_CARDNAME);
+		gamePanel.requestFocus();
 	}
 	
+	public void swapToSplashPanel(){
+		((CardLayout)containerPanel.getLayout()).show(containerPanel, SPLASH_CARDNAME);
+		splashPanel.requestFocus();
+	}
+	
+	public void swapToPreferencesPanel(){
+		((CardLayout)containerPanel.getLayout()).show(containerPanel, PREFERENCES_CARDNAME);
+		preferencesPanel.requestFocus();
+	}
+	
+	public void newGame(){
+		gamePanel.newGame();
+	}
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
 		if(command.equals("Roll Again")){
-			switchMainPanel(MainPanelMode.GAME);
-			gamePanel.newGame();
+			newGame();
+			swapToGamePanel();
 			repaint();
 		}
 		else if(command.equals("Preferences")){
-			switchMainPanel(MainPanelMode.PREFERENCES);
+			swapToPreferencesPanel();
 			repaint();
 		}
 		else if(command.equals("Quit")){
 			System.exit(0);
-		}
-		else if(command.equals("TEST BUTTON")){ //TODO: TEST BUTTON PLEASE IGNORE
-			System.out.println("beep boop");
-			gamePanel.testMethod();
 		}
 	}
 
@@ -122,8 +117,4 @@ public class MathPuzzleSwing extends JFrame implements ActionListener {
             }
         });
     }
-	
-	private enum MainPanelMode{
-		SPLASH, GAME, PREFERENCES
-	}
 }
